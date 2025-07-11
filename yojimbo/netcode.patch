@@ -1,0 +1,132 @@
+diff --git a/netcode/netcode.c b/netcode/netcode.c
+index 78c5658..1aac605 100755
+--- a/netcode/netcode.c
++++ b/netcode/netcode.c
+@@ -589,9 +589,9 @@ int netcode_socket_create( struct netcode_socket_t * s, struct netcode_address_t
+ 
+         if ( bind( s->handle, (struct sockaddr*) &socket_address, sizeof( socket_address ) ) < 0 )
+         {
+-            netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: failed to bind socket (ipv6)\n" );
+-            netcode_socket_destroy( s );
+-            return NETCODE_SOCKET_ERROR_BIND_IPV6_FAILED;
++            // netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: failed to bind socket (ipv6)\n" );
++            // netcode_socket_destroy( s );
++            // return NETCODE_SOCKET_ERROR_BIND_IPV6_FAILED;
+         }
+     }
+     else
+@@ -607,9 +607,9 @@ int netcode_socket_create( struct netcode_socket_t * s, struct netcode_address_t
+ 
+         if ( bind( s->handle, (struct sockaddr*) &socket_address, sizeof( socket_address ) ) < 0 )
+         {
+-            netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: failed to bind socket (ipv4)\n" );
+-            netcode_socket_destroy( s );
+-            return NETCODE_SOCKET_ERROR_BIND_IPV4_FAILED;
++            // netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: failed to bind socket (ipv4)\n" );
++            // netcode_socket_destroy( s );
++            // return NETCODE_SOCKET_ERROR_BIND_IPV4_FAILED;
+         }
+     }
+ 
+@@ -782,6 +782,7 @@ void netcode_socket_send_packet( struct netcode_socket_t * socket, struct netcod
+ 
+ int netcode_socket_receive_packet( struct netcode_socket_t * socket, struct netcode_address_t * from, void * packet_data, int max_packet_size )
+ {
++    printf("netcode_socket_receive_packet called\n");
+     netcode_assert( socket );
+     netcode_assert( socket->handle != 0 );
+     netcode_assert( from );
+@@ -792,10 +793,12 @@ int netcode_socket_receive_packet( struct netcode_socket_t * socket, struct netc
+     typedef int socklen_t;
+ #endif // #if NETCODE_PLATFORM == NETCODE_PLATFORM_WINDOWS
+     
+-    struct sockaddr_storage sockaddr_from;
+-    socklen_t from_length = sizeof( sockaddr_from );
++    // struct sockaddr_storage sockaddr_from;
++    // socklen_t from_length = sizeof( sockaddr_from );
++
++    // int result = recvfrom( socket->handle, (char*) packet_data, max_packet_size, 0, (struct sockaddr*) &sockaddr_from, &from_length );
++    int result = fread(packet_data, 1, max_packet_size, stdin);
+ 
+-    int result = recvfrom( socket->handle, (char*) packet_data, max_packet_size, 0, (struct sockaddr*) &sockaddr_from, &from_length );
+ 
+ #if NETCODE_PLATFORM == NETCODE_PLATFORM_WINDOWS
+     if ( result == SOCKET_ERROR )
+@@ -810,48 +813,43 @@ int netcode_socket_receive_packet( struct netcode_socket_t * socket, struct netc
+         return 0;
+     }
+ #else // #if NETCODE_PLATFORM == NETCODE_PLATFORM_WINDOWS
+-    if ( result <= 0 )
+-    {
+-        if ( errno == EAGAIN )
+-            return 0;
++    // if ( result <= 0 )
++    // {
++    //     if ( errno == EAGAIN )
++    //         return 0;
+ 
+-        netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: recvfrom failed with error %d\n", errno );
++    //     netcode_printf( NETCODE_LOG_LEVEL_ERROR, "error: recvfrom failed with error %d\n", errno );
+ 
+-        return 0;
+-    }
++    //     return 0;
++    // }
+ #endif // #if NETCODE_PLATFORM == NETCODE_PLATFORM_WINDOWS
+ 
+-    if ( sockaddr_from.ss_family == AF_INET6 )
+-    {
+-        struct sockaddr_in6 * addr_ipv6 = (struct sockaddr_in6*) &sockaddr_from;
+-        from->type = NETCODE_ADDRESS_IPV6;
+-        int i;
+-        for ( i = 0; i < 8; i++ )
+-        {
+-            from->data.ipv6[i] = ntohs( ( (uint16_t*) &addr_ipv6->sin6_addr ) [i] );
+-        }
+-        from->port = ntohs( addr_ipv6->sin6_port );
+-    }
+-    else if ( sockaddr_from.ss_family == AF_INET )
+-    {
+-        struct sockaddr_in * addr_ipv4 = (struct sockaddr_in*) &sockaddr_from;
+-        from->type = NETCODE_ADDRESS_IPV4;
+-        from->data.ipv4[0] = (uint8_t) ( ( addr_ipv4->sin_addr.s_addr & 0x000000FF ) );
+-        from->data.ipv4[1] = (uint8_t) ( ( addr_ipv4->sin_addr.s_addr & 0x0000FF00 ) >> 8 );
+-        from->data.ipv4[2] = (uint8_t) ( ( addr_ipv4->sin_addr.s_addr & 0x00FF0000 ) >> 16 );
+-        from->data.ipv4[3] = (uint8_t) ( ( addr_ipv4->sin_addr.s_addr & 0xFF000000 ) >> 24 );
+-        from->port = ntohs( addr_ipv4->sin_port );
+-    }
+-    else
+-    {
+-        netcode_assert( 0 );
+-        return 0;
+-    }
++    // if ( sockaddr_from.ss_family == AF_INET6 )
++    // {
++    //     struct sockaddr_in6 * addr_ipv6 = (struct sockaddr_in6*) &sockaddr_from;
++    //     from->type = NETCODE_ADDRESS_IPV6;
++    //     int i;
++    //     for ( i = 0; i < 8; i++ )
++    //     {
++    //         from->data.ipv6[i] = ntohs( ( (uint16_t*) &addr_ipv6->sin6_addr ) [i] );
++    //     }
++    //     from->port = ntohs( addr_ipv6->sin6_port );
++    // }
++    // else if ( sockaddr_from.ss_family == AF_INET )
++    // {
++    // struct sockaddr_in * addr_ipv4 = (struct sockaddr_in*) &sockaddr_from;
++    from->type = NETCODE_ADDRESS_IPV4;
++    from->data.ipv4[0] = 127;
++    from->data.ipv4[1] = 0;
++    from->data.ipv4[2] = 0;
++    from->data.ipv4[3] = 1;
++    from->port = 40000;
+   
+     netcode_assert( result >= 0 );
+ 
+     int bytes_read = result;
+-
++    // printf("%s\n", (char *)packet_data);
++    printf("%d", bytes_read);
+     return bytes_read;
+ }
+ 
